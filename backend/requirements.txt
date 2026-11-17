@@ -1,0 +1,5 @@
+# Backend Dependencies
+# The backend server is engineered with zero external dependencies
+# using Python 3's built-in standard library (http.server, email, pathlib, json, mimetypes).
+#
+# Python 3.10+ is recommended.

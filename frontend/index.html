@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My File Manager - Premium File Upload & Gallery</title>
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2'><path d='M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 8 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z'/></svg>">
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- PDF.js for rendering PDF thumbnails -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
+
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3.5 flex items-center justify-between">
+      
+      <!-- Brand & Header Title -->
+      <div class="flex items-center space-x-3.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 8 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+            <path d="m9 13 3-3 3 3"/>
+            <path d="M12 10v7"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              My File Manager
+            </h1>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+              PRO
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
+            Modern, responsive file upload, storage, and gallery management
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Metrics & Status -->
+      <div class="flex items-center space-x-3">
+        <!-- Server / Local indicator -->
+        <div id="server-status-indicator" class="hidden sm:block">
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>
+            Local Storage
+          </span>
+        </div>
+
+        <!-- File Counter Badge -->
+        <div class="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200">
+          <svg class="w-4 h-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          <span id="total-files-badge">0 files</span>
+          <span class="text-slate-300 dark:text-slate-600">•</span>
+          <span id="total-storage-badge" class="text-slate-500 dark:text-slate-400">0 B</span>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+
+    <!-- ========================================== -->
+    <!-- SECTION 1: DEDICATED FILE UPLOAD SECTION   -->
+    <!-- (Visually Distinct & Elegant)             -->
+    <!-- ========================================== -->
+    <section id="upload-section" class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+      
+      <!-- Subtle Decorative Background Glow -->
+      <div class="absolute -top-24 -right-24 w-80 h-80 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -left-24 w-80 h-80 bg-violet-500/5 dark:bg-violet-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Section Title & Description -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800/80 gap-3">
+        <div>
+          <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Upload Files
+          </h2>
+          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            Drag and drop multiple files anywhere into the upload box or select files from your device.
+          </p>
+        </div>
+
+        <!-- Format Badges Pill Group -->
+        <div class="flex flex-wrap items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+          <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">JPG</span>
+          <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">PNG</span>
+          <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">SVG</span>
+          <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">PDF</span>
+          <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">DOCX</span>
+          <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">MP4</span>
+          <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">ZIP</span>
+          <span class="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold">+ More</span>
+        </div>
+      </div>
+
+      <!-- Drag & Drop Zone Area -->
+      <div id="drop-zone" class="dropzone-border border-slate-300 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 rounded-2xl p-8 sm:p-12 text-center cursor-pointer mt-6 transition-all duration-200 bg-slate-50/50 dark:bg-slate-850/40 relative group">
+        
+        <!-- Hidden Native File Input -->
+        <input type="file" id="file-input" multiple class="hidden" accept="*">
+
+        <!-- Central Drop Icon & Instructions -->
+        <div class="flex flex-col items-center justify-center space-y-4">
+          
+          <div class="w-20 h-20 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
+            <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+              <path d="M12 12v9"/>
+              <path d="m16 16-4-4-4 4"/>
+            </svg>
+          </div>
+
+          <div class="space-y-1">
+            <p class="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-200">
+              Drag & Drop your files here
+            </p>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              Supports multiple files up to 250MB each. Instant local preview and real storage.
+            </p>
+          </div>
+
+          <!-- Divider label -->
+          <div class="flex items-center w-full max-w-xs my-2">
+            <div class="flex-1 border-t border-slate-200 dark:border-slate-700"></div>
+            <span class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">or</span>
+            <div class="flex-1 border-t border-slate-200 dark:border-slate-700"></div>
+          </div>
+
+          <!-- THE FOUR SPECIFIED CORE ACTION BUTTONS -->
+          <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+            
+            <!-- 1. UPLOAD FILE BUTTON -->
+            <button id="btn-upload-file" type="button" class="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-md hover:shadow-indigo-500/25 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+              <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Upload File
+            </button>
+
+            <!-- 2. + ADD MORE BUTTON -->
+            <button id="btn-add-more" type="button" class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm border border-slate-300 dark:border-slate-600 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-slate-400">
+              <svg class="w-4 h-4 mr-2 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              + Add More
+            </button>
+
+            <!-- 3. SHOW FILES BUTTON -->
+            <button id="btn-show-files" type="button" class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-sm shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white">
+              <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                <circle cx="9" cy="9" r="2"/>
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+              </svg>
+              Show Files
+            </button>
+
+            <!-- 4. CLEAR ALL BUTTON -->
+            <button id="btn-clear-all" type="button" class="inline-flex items-center justify-center px-4 py-3 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 font-semibold text-sm border border-rose-200 dark:border-rose-900 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-rose-400">
+              <svg class="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+              Clear All
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Real-time Active Upload Progress Banner -->
+      <div id="upload-progress-section" class="mt-6 p-4 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/80 hidden transition-all duration-300">
+        <div class="flex items-center justify-between text-xs font-semibold text-indigo-900 dark:text-indigo-200 mb-2">
+          <div class="flex items-center space-x-2">
+            <svg class="w-4 h-4 animate-spin text-indigo-600 dark:text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+            <span id="upload-progress-text">Uploading files...</span>
+          </div>
+          <span class="text-indigo-600 dark:text-indigo-400">Real-time Transfer</span>
+        </div>
+        <div class="w-full bg-indigo-200/60 dark:bg-indigo-900/60 rounded-full h-2 overflow-hidden">
+          <div id="overall-progress-bar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 2: SHOW FILES / GALLERY SECTION    -->
+    <!-- (Visually Distinct, Full Gallery Display)  -->
+    <!-- ========================================== -->
+    <section id="gallery-section" class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-sm transition-all duration-300">
+      
+      <!-- Gallery Header & Controls -->
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800 gap-4">
+        
+        <div>
+          <div class="flex items-center space-x-2.5">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">
+              Uploaded Files Gallery
+            </h2>
+            <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+              Active Collection
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            All files currently uploaded or added. Click any card to preview, download, or manage.
+          </p>
+        </div>
+
+        <!-- Search, Sort & View Mode Toolbar -->
+        <div class="flex flex-wrap items-center gap-2.5">
+          
+          <!-- Search input -->
+          <div class="relative flex-1 sm:flex-initial">
+            <input type="text" id="search-input" placeholder="Search files..." class="w-full sm:w-56 pl-9 pr-3.5 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100 placeholder-slate-400">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
+
+          <!-- Sort dropdown -->
+          <select id="sort-select" class="px-3 py-2 text-xs font-medium rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-300 cursor-pointer">
+            <option value="date-desc">Newest Added</option>
+            <option value="date-asc">Oldest Added</option>
+            <option value="name-asc">Name (A - Z)</option>
+            <option value="name-desc">Name (Z - A)</option>
+            <option value="size-desc">Size (Largest)</option>
+            <option value="size-asc">Size (Smallest)</option>
+          </select>
+
+          <!-- Grid / List Switcher -->
+          <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700">
+            <button id="btn-view-grid" class="p-1.5 rounded-lg active-view text-slate-700 dark:text-slate-200 transition" title="Grid View">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="7" height="7" x="3" y="3" rx="1"/>
+                <rect width="7" height="7" x="14" y="3" rx="1"/>
+                <rect width="7" height="7" x="14" y="14" rx="1"/>
+                <rect width="7" height="7" x="3" y="14" rx="1"/>
+              </svg>
+            </button>
+            <button id="btn-view-list" class="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 transition" title="List View">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"/>
+                <line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/>
+                <line x1="3" y1="6" x2="3.01" y2="6"/>
+                <line x1="3" y1="12" x2="3.01" y2="12"/>
+                <line x1="3" y1="18" x2="3.01" y2="18"/>
+              </svg>
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Category Filter Chips -->
+      <div class="flex items-center space-x-2 py-4 overflow-x-auto no-scrollbar border-b border-slate-100 dark:border-slate-800 text-xs">
+        <button class="filter-chip active-filter px-3 py-1.5 rounded-xl font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors whitespace-nowrap" data-filter="all">
+          All Files
+        </button>
+        <button class="filter-chip px-3 py-1.5 rounded-xl font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap" data-filter="image">
+          Images
+        </button>
+        <button class="filter-chip px-3 py-1.5 rounded-xl font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap" data-filter="pdf">
+          PDFs
+        </button>
+        <button class="filter-chip px-3 py-1.5 rounded-xl font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap" data-filter="video">
+          Videos
+        </button>
+        <button class="filter-chip px-3 py-1.5 rounded-xl font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap" data-filter="document">
+          Documents
+        </button>
+        <button class="filter-chip px-3 py-1.5 rounded-xl font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap" data-filter="archive">
+          Archives
+        </button>
+        <button class="filter-chip px-3 py-1.5 rounded-xl font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap" data-filter="audio">
+          Audio
+        </button>
+      </div>
+
+      <!-- GALLERY DISPLAY CONTAINER -->
+      <div class="mt-6">
+        
+        <!-- Files Container (Populated via JS) -->
+        <div id="files-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <!-- Individual File Cards rendered here -->
+        </div>
+
+        <!-- SPECIFIED EMPTY STATE MESSAGE -->
+        <div id="empty-state" class="py-16 text-center max-w-md mx-auto">
+          <div class="w-20 h-20 mx-auto rounded-3xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mb-5 shadow-inner">
+            <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="12" y1="18" x2="12" y2="12"/>
+              <line x1="9" y1="15" x2="15" y2="15"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-bold text-slate-800 dark:text-slate-200 mb-2">
+            No files uploaded yet. Start by uploading your first file.
+          </h3>
+          <p class="text-xs text-slate-400 mb-6">
+            Drag files into the upload area above or click the buttons below.
+          </p>
+          <div class="flex flex-wrap items-center justify-center gap-3">
+            <button id="empty-state-upload-btn" type="button" class="inline-flex items-center px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-md transition-all">
+              <svg class="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Upload Your First File
+            </button>
+            <button id="empty-state-demo-btn" type="button" class="inline-flex items-center px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs border border-slate-300 dark:border-slate-700 shadow-sm transition-all">
+              <svg class="w-4 h-4 mr-1.5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+              Load Sample Demo Files
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- CONFIRMATION DIALOG FOR CLEAR ALL          -->
+  <!-- ========================================== -->
+  <div id="clear-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/70 backdrop-blur-sm transition-opacity duration-200 opacity-0" role="dialog" aria-modal="true">
+    <div class="modal-box bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full mx-4 p-6 shadow-2xl border border-slate-200 dark:border-slate-800 transition-transform duration-200 scale-95">
+      <div class="flex items-start space-x-4">
+        <div class="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">
+            Clear all files?
+          </h3>
+          <p id="clear-modal-count-text" class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+            Are you sure you want to remove all files from your collection and clear their previews?
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center justify-end space-x-3">
+        <button id="clear-modal-cancel" type="button" class="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+          Cancel
+        </button>
+        <button id="clear-modal-confirm" type="button" class="px-4 py-2 text-xs font-semibold rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-md shadow-rose-600/20 transition">
+          Clear All Files
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container (Bottom-Right) -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-2.5 max-w-sm w-full pointer-events-none">
+    <!-- Dynamic Toasts Injected Here -->
+  </div>
+
+  <!-- Application Logic (Universal Bundle) -->
+  <script src="js/bundle.js"></script>
+
+</body>
+</html>

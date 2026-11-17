@@ -1,0 +1,20 @@
+# Operating System
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Vercel
+.vercel/
+
+# Uploaded persistent storage (keep folder structure, ignore uploaded files)
+backend/uploads/*
+!backend/uploads/.gitkeep
